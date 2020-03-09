@@ -1,6 +1,5 @@
 #include "ocr.h"
 
-
 OCR::OCR()
 {
     psenet.load_param("../../models/psenet_lite_mbv2.param");
@@ -14,13 +13,10 @@ OCR::OCR()
 
     crnn_vertical_net.load_param("../../models/crnn_lite_dw_dense_vertical.param");
     crnn_vertical_net.load_model("../../models/crnn_lite_dw_dense_vertical.bin");
-    
-
 
     angle_net.load_param("../../models/shufflenetv2_05_angle.param");
     angle_net.load_model("../../models/shufflenetv2_05_angle.bin");
 }
-
 
 string utf8_substr2(const string &str,int start, int length=INT_MAX)
 {
@@ -65,10 +61,10 @@ string utf8_substr2(const string &str,int start, int length=INT_MAX)
 std::vector<std::string> crnn_deocde(const ncnn::Mat score , string alphabetChinese) {
     float *srcdata = (float* ) score.data;
     std::vector<std::string> str_res;
-    int last_index = 0;  
+    int last_index = 0;
     for (int i = 0; i < score.h;i++){
         int max_index = 0;
-        
+
         float max_value = -1000;
         for (int j =0; j< score.w; j++){
             if (srcdata[ i * score.w + j ] > max_value){
@@ -78,8 +74,8 @@ std::vector<std::string> crnn_deocde(const ncnn::Mat score , string alphabetChin
         }
 
         if (max_index >0 && (not (i>0 && max_index == last_index))  ){
-            
-            std::string temp_str =  utf8_substr2(alphabetChinese,max_index-1,1)  ;
+
+            std::string temp_str = utf8_substr2(alphabetChinese,max_index-1,1)  ;
             str_res.push_back(temp_str);
         }
 
@@ -94,7 +90,7 @@ void ncnn2cv(ncnn::Mat src, cv::Mat &score, cv::Mat &thre_img, const float thre_
     for (int i = 0; i < src.h; i++) {
         for (int j = 0; j < src.w; j++) {
             score.at<float>(i, j) = srcdata[i * src.w + j + src.w*src.h*5];
-            
+
             if (srcdata[i * src.w + j + src.w*src.h*5 ] >= thre_val) {
                 // std::cout << srcdata[i * src.w + j] << std::endl;
                 thre_img.at<uchar>(i, j) = 255;
@@ -171,7 +167,6 @@ std::vector<std::vector<cv::Point>> pse_deocde(const cv::Mat &score, const cv::M
     int nLabels = connectedComponentsWithStats(thre, label_img, stats, centroids,4);
     // int nLabels = connectedComponents(thre, label_img  , 4);
 
-
     // std::cout << "nLabels:" << nLabels << std::endl;
 
     std::vector<float> angles;
@@ -209,7 +204,7 @@ std::vector<std::vector<cv::Point>> pse_deocde(const cv::Mat &score, const cv::M
             continue;
         }
         cv::RotatedRect rect = cv::minAreaRect(points);
-        
+
         float w = rect.size.width;
         float h = rect.size.height;
         float angle = rect.angle;
@@ -238,12 +233,10 @@ std::vector<std::vector<cv::Point>> pse_deocde(const cv::Mat &score, const cv::M
         bboxs.emplace_back(points);
         angles.emplace_back(angle);
         rects.push_back(rect);
-     
+
     }
     return bboxs;
 }
-
-
 
 
 cv::Mat matRotateClockWise180(cv::Mat src)//顺时针180
@@ -257,7 +250,6 @@ cv::Mat matRotateClockWise180(cv::Mat src)//顺时针180
 
 cv::Mat matRotateClockWise90(cv::Mat src)
 {
-
 	// 矩阵转置
 	transpose(src, src);
 	//0: 沿X轴翻转； >0: 沿Y轴翻转； <0: 沿X轴和Y轴翻转
@@ -268,8 +260,7 @@ cv::Mat matRotateClockWise90(cv::Mat src)
 
 void  OCR::detect(cv::Mat im_bgr,int long_size)
 {
-
-        // 图像缩放
+    // 图像缩放
     auto im = resize_img(im_bgr, long_size);
 
 
@@ -293,7 +284,7 @@ void  OCR::detect(cv::Mat im_bgr,int long_size)
     time1 = static_cast<double>( cv::getTickCount());
     cv::Mat score = cv::Mat::zeros(preds.h, preds.w, CV_32FC1);
     cv::Mat thre = cv::Mat::zeros(preds.h, preds.w, CV_8UC1);
-    std::vector<cv::RotatedRect> rects ; 
+    std::vector<cv::RotatedRect> rects ;
     ncnn2cv(preds, score, thre);
     auto bboxs = pse_deocde(score, thre, rects , 1, h_scale, w_scale);
     std::cout << "psenet decode 时间:" << (static_cast<double>( cv::getTickCount()) - time1) / cv::getTickFrequency() << "s" << std::endl;
@@ -316,7 +307,6 @@ void  OCR::detect(cv::Mat im_bgr,int long_size)
         temprect.size.width  =   int(temprect.size.width + min_size * 0.1);
         temprect.size.height =  int(temprect.size.height + min_size * 0.1);
 
-
         RRLib::getRotRectImg(temprect, im_bgr, part_im);
 
         int part_im_w = part_im.cols;
@@ -330,7 +320,7 @@ void  OCR::detect(cv::Mat im_bgr,int long_size)
         // std::cout << "网络输出尺寸 2(" << part_im_w<< ", " << part_im_h <<  ")" << std::endl;
         // cv::imwrite("test.jpg",part_im);
         //分类
-        ncnn::Mat  shufflenet_input = ncnn::Mat::from_pixels_resize(angle_input.data, 
+        ncnn::Mat  shufflenet_input = ncnn::Mat::from_pixels_resize(angle_input.data,
                 ncnn::Mat::PIXEL_BGR2RGB, angle_input.cols, part_im.rows ,shufflenetv2_target_w ,shufflenetv2_target_h );
 
         shufflenet_input.substract_mean_normalize(mean_vals_pse_angle,norm_vals_pse_angle );
@@ -356,7 +346,7 @@ void  OCR::detect(cv::Mat im_bgr,int long_size)
                 max_value = srcdata[i];
             }
         }
-        
+
         if (angle_index == 0 || angle_index ==2) part_im = matRotateClockWise180(part_im);
 
         // 开始文本识别
@@ -371,18 +361,18 @@ void  OCR::detect(cv::Mat im_bgr,int long_size)
 
         cv::Mat img2 = part_im.clone();
 
-        ncnn::Mat  crnn_in = ncnn::Mat::from_pixels_resize(img2.data, 
+        ncnn::Mat crnn_in = ncnn::Mat::from_pixels_resize(img2.data,
                     ncnn::Mat::PIXEL_BGR2GRAY, img2.cols, img2.rows , crnn_w_target, crnn_h );
 
-        // ncnn::Mat  crnn_in = ncnn::Mat::from_pixels_resize(part_im.data, 
+        // ncnn::Mat  crnn_in = ncnn::Mat::from_pixels_resize(part_im.data,
         //             ncnn::Mat::PIXEL_BGR2GRAY, part_im.cols, part_im.rows , crnn_w_target, crnn_h );
-        
+
         crnn_in.substract_mean_normalize(mean_vals_crnn,norm_vals_crnn );
-       
+
         ncnn::Mat crnn_preds;
 
         //判断用横排还是竖排模型 { 0 : "hengdao",  1:"hengzhen",  2:"shudao",  3:"shuzhen"} #hengdao: 文本行横向倒立 其他类似
-       
+
         // time1 = static_cast<double>( cv::getTickCount());
         // std::cout << angle_index << std::endl;
         if (angle_index ==0 || angle_index ==1 ){
@@ -392,17 +382,14 @@ void  OCR::detect(cv::Mat im_bgr,int long_size)
         }
         else{
             ncnn::Extractor crnn_ex = crnn_vertical_net.create_extractor();
-            crnn_ex.input("input", crnn_in); 
+            crnn_ex.input("input", crnn_in);
             crnn_ex.extract("out", crnn_preds);
         }
-         
-       
+
     //    crnn_ex.set_num_threads(4);ss
-     
 
         // std::cout << "前向时间:" << (static_cast<double>( cv::getTickCount()) - time1) / cv::getTickFrequency() << "s" << std::endl;
         // std::cout << "网络输出尺寸 (" << crnn_preds.w << ", " << crnn_preds.h << ", " << crnn_preds.c << ")" << std::endl;
-
 
         auto res_pre = crnn_deocde(crnn_preds,alphabetChinese);
         std::cout << "预测结果：";
@@ -413,9 +400,5 @@ void  OCR::detect(cv::Mat im_bgr,int long_size)
 
     }
     std::cout << "角度检测和文字识别总时间:" << (static_cast<double>( cv::getTickCount()) - time1) / cv::getTickFrequency() << "s" << std::endl;
-  
-
-
 }
-
 

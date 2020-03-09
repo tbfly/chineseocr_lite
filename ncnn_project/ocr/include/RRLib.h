@@ -13,11 +13,11 @@ namespace RRLib {
     //----------------------------------------------------------
     void getRotRectImg(cv::RotatedRect rr, cv::Mat &img, cv::Mat& dst);
     //----------------------------------------------------------
-    // Copies image region (src_roi) from src image, to rotated region on image dst  
+    // Copies image region (src_roi) from src image, to rotated region on image dst
     //----------------------------------------------------------
     void copyToRotRectImg(cv::Rect src_roi, cv::RotatedRect rr, cv::Mat &src, cv::Mat& dst);
     //----------------------------------------------------------
-    // Copies image src, to rotated region on image dst  
+    // Copies image src, to rotated region on image dst
     //----------------------------------------------------------
     void copyToRotRectImg(cv::RotatedRect rr, cv::Mat &src, cv::Mat& mask, cv::Mat& dst);
     //----------------------------------------------------------

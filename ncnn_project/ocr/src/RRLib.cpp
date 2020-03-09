@@ -191,7 +191,7 @@ namespace RRLib {
         myGetQuadrangleSubPix(img, dst, m);
     }
     //----------------------------------------------------------
-    // Copies image region (src_roi) from src image, to rotated region on image dst  
+    // Copies image region (src_roi) from src image, to rotated region on image dst
     //----------------------------------------------------------
     void copyToRotRectImg(cv::Rect src_roi, cv::RotatedRect rr, Mat &src, Mat& dst)
     {
@@ -211,7 +211,7 @@ namespace RRLib {
         warpAffine(tmp, dst, m, rs, INTER_CUBIC, BORDER_TRANSPARENT, Scalar::all(0));
     }
     //----------------------------------------------------------
-    // Copies image src, to rotated region on image dst  
+    // Copies image src, to rotated region on image dst
     //----------------------------------------------------------
     void copyToRotRectImg(cv::RotatedRect rr, Mat &src, Mat& mask, Mat& dst)
     {
